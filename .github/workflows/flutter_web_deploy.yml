@@ -2,8 +2,6 @@ name: Deploy Flutter Web
 
 on:
   workflow_dispatch:
-    branches:
-      - flutterflow
 
 permissions:
   contents: read
@@ -19,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: flutterflow
 
       - uses: subosito/flutter-action@v2
         with:
