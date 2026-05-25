@@ -1,0 +1,32 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "MANUTENCAO",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "EMAIL",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "DATADAMANUTENCAO",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "chat",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "email_cliente",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "data",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ]
+}
