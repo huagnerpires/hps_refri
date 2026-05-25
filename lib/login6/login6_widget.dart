@@ -629,7 +629,7 @@ class _Login6WidgetState extends State<Login6Widget>
                                     }
 
                                     _navigate = () => context.goNamedAuth(
-                                        PerfilWidget.routeName,
+                                        HOMENewWidget.routeName,
                                         context.mounted);
                                     await actions.onesignal(
                                       _model.emailAddressTextController.text,
