@@ -150,7 +150,17 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
         vsync: this, duration: const Duration(milliseconds: 280));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
     _fadeCtrl.forward();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Se já tem sessão ativa (ex: reload na web), vai direto para HOME
+      final usuarioAtivo = FirebaseAuth.instance.currentUser;
+      if (usuarioAtivo != null && mounted) {
+        // Restaura nome do AppState (persiste entre reloads)
+        final nomeGuardado = FFAppState().variavelUSUARIO.nome;
+        if (nomeGuardado.isNotEmpty) {
+          context.goNamedAuth('HOME', context.mounted);
+          return;
+        }
+      }
       _verificarSenhaRedefinida();
       _carregarLogoFirebase();
     });
