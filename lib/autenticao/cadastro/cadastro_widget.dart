@@ -1515,7 +1515,7 @@ class _CadastroWidgetState extends State<CadastroWidget>
                                             );
 
                                             context.goNamedAuth(
-                                                HOMENewWidget.routeName,
+                                                PerfilWidget.routeName,
                                                 context.mounted);
 
                                             safeSetState(() {});

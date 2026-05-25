@@ -79,13 +79,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       refreshListenable: appStateNotifier,
       navigatorKey: appNavigatorKey,
       errorBuilder: (context, state) =>
-          appStateNotifier.loggedIn ? HOMENewWidget() : LoginWidget(),
+          appStateNotifier.loggedIn ? PerfilWidget() : LoginWidget(),
       routes: [
         FFRoute(
           name: '_initialize',
           path: '/',
           builder: (context, _) =>
-              appStateNotifier.loggedIn ? HOMENewWidget() : LoginWidget(),
+              appStateNotifier.loggedIn ? PerfilWidget() : LoginWidget(),
         ),
         FFRoute(
           name: HomebackupWidget.routeName,
