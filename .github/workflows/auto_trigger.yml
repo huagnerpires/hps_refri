@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Dispatch Deploy Flutter Web
         run: |
-          curl -X POST \
+          curl -v -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/huagnerpires/hps_refri/actions/workflows/flutter_web_deploy.yml/dispatches \
