@@ -1,7 +1,9 @@
 name: Deploy Flutter Web
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - flutterflow
 
 permissions:
   contents: read

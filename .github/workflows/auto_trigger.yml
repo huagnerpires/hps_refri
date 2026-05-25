@@ -9,10 +9,14 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch Deploy Flutter Web
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: flutterflow
+
+      - name: Push vazio para triggar deploy
         run: |
-          curl -v -X POST \
-            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/huagnerpires/hps_refri/actions/workflows/flutter_web_deploy.yml/dispatches \
-            -d '{"ref":"flutterflow"}'
+          git config user.email "hpsrefri@gmail.com"
+          git config user.name "HPS Deploy Bot"
+          git commit --allow-empty -m "ci: auto deploy trigger"
+          git push origin flutterflow
