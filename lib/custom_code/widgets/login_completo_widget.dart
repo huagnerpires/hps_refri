@@ -297,18 +297,25 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
         return;
       }
 
-      // Autenticação Firebase
-      GoRouter.of(context).prepareAuthEvent();
-      final user = await authManager.signInWithEmail(context, email, senha);
-      if (user == null) {
-        setState(() => _loginCarregando = false);
-        return;
+      // Se já está logado com o mesmo email (ex: reload na web), pula o signIn
+      final jaLogadoLogin =
+          FirebaseAuth.instance.currentUser?.email?.toLowerCase() ==
+              email.toLowerCase();
+
+      if (!jaLogadoLogin) {
+        GoRouter.of(context).prepareAuthEvent();
+        final user = await authManager.signInWithEmail(context, email, senha);
+        if (user == null) {
+          setState(() => _loginCarregando = false);
+          return;
+        }
       }
 
-      // Não atualiza o doc existente — apenas registra último acesso
+      // Atualiza apenas último acesso no doc existente
       if (_areaRestritaRef != null) {
         try {
           await _areaRestritaRef.update({
+            'uid': FirebaseAuth.instance.currentUser?.uid ?? '',
             'ultimo_acesso': FieldValue.serverTimestamp(),
           });
         } catch (_) {}
@@ -366,25 +373,35 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
       final nomeFormatado = getMesMaiusculaA(nome) ?? nome.toUpperCase();
       final senha = _cadSenha; // senha vinda da tela login
 
-      // Sempre cria doc novo — permite múltiplos usuários com mesmo email
+      // Se já está logado com o mesmo email (web reload), pula o signIn
+      final jaLogado =
+          FirebaseAuth.instance.currentUser?.email?.toLowerCase() ==
+              _cadEmail.toLowerCase();
+
+      if (!jaLogado) {
+        GoRouter.of(context).prepareAuthEvent();
+        final user =
+            await authManager.signInWithEmail(context, _cadEmail, senha);
+        if (user == null) {
+          // Senha incorreta — erro inline sem sair da tela
+          setState(() {
+            _cadCarregando = false;
+            _cadErro = 'Senha incorreta. Volte ao login e verifique sua senha.';
+          });
+          return;
+        }
+      }
+
+      // Salva doc APÓS login (uid disponível)
+      final uidAtual = FirebaseAuth.instance.currentUser?.uid ?? '';
       await FirebaseFirestore.instance.collection('AREA_RESTRITA').add({
         'email': _cadEmail,
         'nome': nomeFormatado,
         'cargo': cargo,
+        'uid': uidAtual,
         'cadastrado_em': FieldValue.serverTimestamp(),
         'ultimo_acesso': FieldValue.serverTimestamp(),
       });
-
-      GoRouter.of(context).prepareAuthEvent();
-      final user = await authManager.signInWithEmail(context, _cadEmail, senha);
-      if (user == null) {
-        // Senha incorreta — erro inline sem sair da tela
-        setState(() {
-          _cadCarregando = false;
-          _cadErro = 'Senha incorreta. Volte ao login e verifique sua senha.';
-        });
-        return;
-      }
 
       FFAppState().nomedouser = nomeFormatado;
       FFAppState().variavelUSUARIO = DadosUsuarioStruct(
@@ -398,7 +415,7 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
         '0000000',
         'Email',
         _cadEmail,
-        FirebaseAuth.instance.currentUser?.uid,
+        uidAtual,
       );
 
       if (mounted) context.goNamedAuth('HOME', context.mounted);
