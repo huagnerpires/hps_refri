@@ -14,8 +14,6 @@ import 'package:flutter/material.dart';
 
 import 'index.dart'; // Imports other custom widgets
 
-import 'index.dart';
-
 import '/auth/firebase_auth/auth_util.dart';
 import 'package:go_router/go_router.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
@@ -154,10 +152,14 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
       // Se já tem sessão ativa (ex: reload na web), vai direto para HOME
       final usuarioAtivo = FirebaseAuth.instance.currentUser;
       if (usuarioAtivo != null && mounted) {
-        // Restaura nome do AppState (persiste entre reloads)
+        // Restaura nome do AppState (persiste entre reloads via SharedPreferences)
         final nomeGuardado = FFAppState().variavelUSUARIO.nome;
-        if (nomeGuardado.isNotEmpty) {
-          context.goNamedAuth('HOME', context.mounted);
+        final emailGuardado = FFAppState().variavelUSUARIO.email;
+        // Só redireciona se tiver nome E email salvos (cadastro completo)
+        if (nomeGuardado.isNotEmpty &&
+            emailGuardado.isNotEmpty &&
+            emailGuardado != 'hpsrefri@gmail.com') {
+          if (mounted) context.goNamedAuth('HOME', context.mounted);
           return;
         }
       }
@@ -313,10 +315,22 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
               email.toLowerCase();
 
       if (!jaLogadoLogin) {
-        GoRouter.of(context).prepareAuthEvent();
-        final user = await authManager.signInWithEmail(context, email, senha);
-        if (user == null) {
-          setState(() => _loginCarregando = false);
+        try {
+          GoRouter.of(context).prepareAuthEvent();
+          final user = await authManager.signInWithEmail(context, email, senha);
+          if (user == null) {
+            setState(() {
+              _loginCarregando = false;
+              _loginErro = 'Senha incorreta. Verifique e tente novamente.';
+            });
+            return;
+          }
+        } catch (signInErr) {
+          setState(() {
+            _loginCarregando = false;
+            _loginErro = 'Erro ao autenticar. Verifique email e senha.';
+          });
+          print('SignIn erro login: $signInErr');
           return;
         }
       }
@@ -389,15 +403,26 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
               _cadEmail.toLowerCase();
 
       if (!jaLogado) {
-        GoRouter.of(context).prepareAuthEvent();
-        final user =
-            await authManager.signInWithEmail(context, _cadEmail, senha);
-        if (user == null) {
-          // Senha incorreta — erro inline sem sair da tela
+        try {
+          GoRouter.of(context).prepareAuthEvent();
+          final user =
+              await authManager.signInWithEmail(context, _cadEmail, senha);
+          if (user == null) {
+            setState(() {
+              _cadCarregando = false;
+              _cadErro =
+                  'Senha incorreta. Volte ao login e verifique sua senha.';
+            });
+            return;
+          }
+        } catch (signInErr) {
+          // Na web, erros de autenticação podem vir como exceção
           setState(() {
             _cadCarregando = false;
-            _cadErro = 'Senha incorreta. Volte ao login e verifique sua senha.';
+            _cadErro =
+                'Senha incorreta ou erro de autenticação. Volte ao login e tente novamente.';
           });
+          print('SignIn erro cadastro: $signInErr');
           return;
         }
       }
