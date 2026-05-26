@@ -159,7 +159,7 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
         if (nomeGuardado.isNotEmpty &&
             emailGuardado.isNotEmpty &&
             emailGuardado != 'hpsrefri@gmail.com') {
-          if (mounted) context.goNamedAuth('HOME', context.mounted);
+          if (mounted) context.goNamedAuth('HOME_new', context.mounted);
           return;
         }
       }
@@ -297,7 +297,34 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
           );
           return;
         }
-        // Email existe em USUARIOS mas sem registro em AREA_RESTRITA — primeiro acesso
+        // Email existe em USUARIOS mas sem AREA_RESTRITA — primeiro acesso
+        // Faz login PRIMEIRO para garantir que o uid está disponível no cadastro
+        try {
+          GoRouter.of(context).prepareAuthEvent();
+          final userCad =
+              await authManager.signInWithEmail(context, email, senha);
+          if (userCad == null) {
+            setState(() {
+              _loginCarregando = false;
+              _loginErro = 'Senha incorreta. Verifique e tente novamente.';
+            });
+            return;
+          }
+        } catch (signInErrCad) {
+          final errStr = signInErrCad.toString().toLowerCase();
+          final msg = errStr.contains('wrong-password') ||
+                  errStr.contains('invalid-credential') ||
+                  errStr.contains('user-not-found')
+              ? 'Email ou senha incorretos.'
+              : 'Erro ao autenticar. Verifique email e senha.';
+          setState(() {
+            _loginCarregando = false;
+            _loginErro = msg;
+          });
+          print('SignIn erro (primeiro acesso): $signInErrCad');
+          return;
+        }
+        // Login OK — vai para cadastro (já autenticado)
         setState(() {
           _cadEmail = email;
           _cadSenha = senha;
@@ -309,10 +336,11 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
         return;
       }
 
-      // Se já está logado com o mesmo email (ex: reload na web), pula o signIn
+      // Usuário já tem AREA_RESTRITA — faz login normalmente
+      final currentEmail =
+          FirebaseAuth.instance.currentUser?.email?.toLowerCase() ?? '';
       final jaLogadoLogin =
-          FirebaseAuth.instance.currentUser?.email?.toLowerCase() ==
-              email.toLowerCase();
+          currentEmail == email.toLowerCase() && currentEmail.isNotEmpty;
 
       if (!jaLogadoLogin) {
         try {
@@ -326,9 +354,15 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
             return;
           }
         } catch (signInErr) {
+          final errStr = signInErr.toString().toLowerCase();
+          final msg = errStr.contains('wrong-password') ||
+                  errStr.contains('invalid-credential') ||
+                  errStr.contains('user-not-found')
+              ? 'Email ou senha incorretos.'
+              : 'Erro ao autenticar. Verifique email e senha.';
           setState(() {
             _loginCarregando = false;
-            _loginErro = 'Erro ao autenticar. Verifique email e senha.';
+            _loginErro = msg;
           });
           print('SignIn erro login: $signInErr');
           return;
@@ -360,7 +394,7 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
         FirebaseAuth.instance.currentUser?.uid,
       );
 
-      if (mounted) context.goNamedAuth('HOME', context.mounted);
+      if (mounted) context.goNamedAuth('HOME_new', context.mounted);
     } catch (e) {
       setState(() => _loginErro = 'Erro ao autenticar. Tente novamente.');
       print('Login erro: $e');
@@ -395,48 +429,39 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
 
     try {
       final nomeFormatado = getMesMaiusculaA(nome) ?? nome.toUpperCase();
-      final senha = _cadSenha; // senha vinda da tela login
+      final senha = _cadSenha;
 
-      // Se já está logado com o mesmo email (web reload), pula o signIn
-      final jaLogado =
-          FirebaseAuth.instance.currentUser?.email?.toLowerCase() ==
-              _cadEmail.toLowerCase();
-
-      if (!jaLogado) {
-        try {
-          GoRouter.of(context).prepareAuthEvent();
-          final user =
-              await authManager.signInWithEmail(context, _cadEmail, senha);
-          if (user == null) {
-            setState(() {
-              _cadCarregando = false;
-              _cadErro =
-                  'Senha incorreta. Volte ao login e verifique sua senha.';
-            });
-            return;
-          }
-        } catch (signInErr) {
-          // Na web, erros de autenticação podem vir como exceção
-          setState(() {
-            _cadCarregando = false;
-            _cadErro =
-                'Senha incorreta ou erro de autenticação. Volte ao login e tente novamente.';
-          });
-          print('SignIn erro cadastro: $signInErr');
-          return;
-        }
-      }
-
-      // Salva doc APÓS login (uid disponível)
+      // O login já foi feito em _fazerLogin antes de vir para cá.
+      // Apenas pega o uid do usuário já autenticado.
       final uidAtual = FirebaseAuth.instance.currentUser?.uid ?? '';
-      await FirebaseFirestore.instance.collection('AREA_RESTRITA').add({
-        'email': _cadEmail,
-        'nome': nomeFormatado,
-        'cargo': cargo,
-        'uid': uidAtual,
-        'cadastrado_em': FieldValue.serverTimestamp(),
-        'ultimo_acesso': FieldValue.serverTimestamp(),
-      });
+
+      print(
+          '=== CADASTRO DEBUG === uid=$uidAtual email=$_cadEmail nome=$nomeFormatado');
+      if (uidAtual.isEmpty) {
+        setState(() {
+          _cadCarregando = false;
+          _cadErro = 'Sessão expirada. Volte ao login e tente novamente.';
+        });
+        return;
+      }
+      // Salva no Firestore
+      try {
+        await FirebaseFirestore.instance.collection('AREA_RESTRITA').add({
+          'email': _cadEmail,
+          'nome': nomeFormatado,
+          'cargo': cargo,
+          'uid': uidAtual,
+          'cadastrado_em': FieldValue.serverTimestamp(),
+          'ultimo_acesso': FieldValue.serverTimestamp(),
+        });
+      } catch (firestoreErr) {
+        setState(() {
+          _cadCarregando = false;
+          _cadErro = 'Erro ao salvar dados: $firestoreErr';
+        });
+        print('Firestore erro: $firestoreErr');
+        return;
+      }
 
       FFAppState().nomedouser = nomeFormatado;
       FFAppState().variavelUSUARIO = DadosUsuarioStruct(
@@ -453,11 +478,13 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
         uidAtual,
       );
 
-      if (mounted) context.goNamedAuth('HOME', context.mounted);
+      if (mounted) context.goNamedAuth('HOME_new', context.mounted);
     } catch (e) {
-      setState(() => _cadCarregando = false);
-      await _dialog('Erro', 'Não foi possível concluir. Tente novamente.');
-      print('Cadastro erro: $e');
+      setState(() {
+        _cadCarregando = false;
+        _cadErro = 'Erro: $e';
+      });
+      print('Cadastro erro geral: $e');
     }
   }
 
@@ -1215,7 +1242,7 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
                   const SizedBox(height: 14),
                   _campoCadastro(
                     label: 'Cargo / Função',
-                    hint: 'Ex: TÉCNICO DE REFRIGERAÇÃO',
+                    hint: 'Ex: GERENTE ADMINISTRATIVO',
                     controller: _cadCargoCtrl,
                     icon: Icons.work_outline_rounded,
                     theme: theme,
