@@ -16,7 +16,90 @@ concurrency:
 
 jobs:
   build:
-    if: "!contains(github.event.head_commit.message, 'ci: auto deploy trigger')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: flutterflow
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: 'stable'
+
+      - name: Corrige dependencias incompativeis
+        run: |
+          sed -i 's/google_fonts: 6.3.3/google_fonts: 6.2.1/' pubspec.yaml
+          sed -i 's/sdk: ">=3.0.0 <4.0.0"/sdk: ">=3.8.0 <4.0.0"/' pubspec.yaml
+          sed -i 's/initialValue: currentValue,/value: currentValue,/' lib/flutter_flow/flutter_flow_drop_down.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web
+        run: flutter build web --release --base-href /
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+Last login: Tue May 26 09:34:51 on ttys000
+huagnerpires@Air-de-huagner ~ % >....                                                                                   
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: flutterflow
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: 'stable'
+
+      - name: Corrige dependencias incompativeis
+        run: |
+          sed -i 's/google_fonts: 6.3.3/google_fonts: 6.2.1/' pubspec.yaml
+          sed -i 's/sdk: ">=3.0.0 <4.0.0"/sdk: ">=3.8.0 <4.0.0"/' pubspec.yaml
+          sed -i 's/initialValue: currentValue,/value: currentValue,/' lib/flutter_flow/flutter_flow_drop_down.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web
+        run: flutter build web --release --base-href /
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+cmdand heredoc> 
+
+cd hps_refri && cat > .github/workflows/flutter_web_deploy.yml << 'WORKFLOW'
+name: Deploy Flutter Web
+
+on:
+  push:
+    branches:
+      - flutterflow
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
