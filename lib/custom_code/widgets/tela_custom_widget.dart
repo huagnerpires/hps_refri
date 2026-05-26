@@ -14,10 +14,6 @@ import 'package:flutter/material.dart';
 
 import 'index.dart'; // Imports other custom widgets
 
-import 'index.dart'; // Imports other custom widgets
-
-import 'index.dart'; // Imports other custom widgets
-
 import '/auth/firebase_auth/auth_util.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -84,11 +80,28 @@ class _TelaCustomWidgetState extends State<TelaCustomWidget> {
   Future<void> _verificarPermissao() async {
     try {
       final email = currentUserEmail.trim();
-      final nome = FFAppState().variavelUSUARIO.nome.trim();
+
+      // Nome vem do AppState; se vazio, busca no Firestore como fallback
+      String nome = FFAppState().variavelUSUARIO.nome.trim();
+      if (nome.isEmpty) {
+        try {
+          final snapU = await FirebaseFirestore.instance
+              .collection('USUARIOS')
+              .where('email', isEqualTo: email.toLowerCase())
+              .limit(1)
+              .get();
+          if (snapU.docs.isNotEmpty) {
+            nome = (snapU.docs.first.data()['display_name'] ??
+                    snapU.docs.first.data()['NOMEDOUSUARIO'] ??
+                    '')
+                .toString()
+                .trim();
+          }
+        } catch (_) {}
+      }
 
       bool permissao = false;
 
-      // Normaliza string para comparação tolerante a acentos (ç, ã, etc.)
       String norm(String s) => s
           .toLowerCase()
           .trim()
@@ -110,18 +123,19 @@ class _TelaCustomWidgetState extends State<TelaCustomWidget> {
       final emailNorm = norm(email);
       final nomeNorm = norm(nome);
 
-      // Busca todos os docs de AREA_RESTRITA
       final todos =
           await FirebaseFirestore.instance.collection('AREA_RESTRITA').get();
 
       for (final doc in todos.docs) {
         final d = doc.data();
 
-        // 1. Deve ter permissao_financeiro == true
-        final temPerm = d['permissao_financeiro'] == true;
+        // 1. Permissão (qualquer campo)
+        final temPerm = d['permissao_financeiro'] == true ||
+            d['permissao'] == true ||
+            d['PERMISSAO'] == true;
         if (!temPerm) continue;
 
-        // 2. Email deve bater (campo novo ou antigo)
+        // 2. Email deve bater
         final docEmail1 = norm((d['email'] ?? '').toString());
         final docEmail2 = norm((d['ID_DO_CELULAR'] ?? '').toString());
         final bateEmail = emailNorm.isNotEmpty &&
@@ -129,13 +143,14 @@ class _TelaCustomWidgetState extends State<TelaCustomWidget> {
         if (!bateEmail) continue;
 
         // 3. Nome deve bater (campo novo ou antigo)
+        // Se nome estiver vazio no AppState E no Firestore, libera só por email+permissão
         final docNome1 = norm((d['nome'] ?? '').toString());
         final docNome2 = norm((d['NOMEDOUSUARIO'] ?? '').toString());
-        final bateNome = nomeNorm.isNotEmpty &&
-            (docNome1 == nomeNorm || docNome2 == nomeNorm);
-        if (!bateNome) continue;
+        if (nomeNorm.isNotEmpty && docNome1.isNotEmpty) {
+          final bateNome = docNome1 == nomeNorm || docNome2 == nomeNorm;
+          if (!bateNome) continue;
+        }
 
-        // Passou nas 3 verificações — acesso liberado
         permissao = true;
         break;
       }

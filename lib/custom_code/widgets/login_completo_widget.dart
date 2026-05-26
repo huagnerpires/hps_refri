@@ -110,7 +110,7 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
   final _cadCargoCtrl = TextEditingController();
   final _cadSenhaCtrl = TextEditingController();
   bool _cadShowSenha = false;
-  String _cadSenha = ''; // senha vinda da tela login
+  String _cadSenha = ''; // senha do login
   String _cadEmail = '';
   bool _cadCarregando = false;
   String _cadErro = '';
@@ -149,22 +149,15 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
     _fadeCtrl.forward();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Se já tem sessão ativa (ex: reload na web), vai direto para HOME
-      final usuarioAtivo = FirebaseAuth.instance.currentUser;
-      if (usuarioAtivo != null && mounted) {
-        // Restaura nome do AppState (persiste entre reloads via SharedPreferences)
-        final nomeGuardado = FFAppState().variavelUSUARIO.nome;
-        final emailGuardado = FFAppState().variavelUSUARIO.email;
-        // Só redireciona se tiver nome E email salvos (cadastro completo)
-        if (nomeGuardado.isNotEmpty &&
-            emailGuardado.isNotEmpty &&
-            emailGuardado != 'hpsrefri@gmail.com') {
-          if (mounted) context.goNamedAuth('HOME_new', context.mounted);
+      final u = FirebaseAuth.instance.currentUser;
+      if (u != null && mounted) {
+        final n = FFAppState().variavelUSUARIO.nome;
+        final e = FFAppState().variavelUSUARIO.email;
+        if (n.isNotEmpty && e.isNotEmpty && e != 'hpsrefri@gmail.com') {
+          context.goNamedAuth('HOME_new', context.mounted);
           return;
         }
       }
-      _verificarSenhaRedefinida();
-      _carregarLogoFirebase();
     });
   }
 
@@ -266,65 +259,39 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
     });
 
     try {
-      // Busca na AREA_RESTRITA pelo NOME digitado (novo campo: nome)
-      // Fallback: também tenta pelo campo antigo NOMEDOUSUARIO
-      final nomeUpper = nome.toUpperCase();
-      QuerySnapshot snapNome = await FirebaseFirestore.instance
+      // Busca por NOME em AREA_RESTRITA
+      final nU = nome.toUpperCase();
+      QuerySnapshot sn = await FirebaseFirestore.instance
           .collection('AREA_RESTRITA')
-          .where('nome', isEqualTo: nomeUpper)
+          .where('nome', isEqualTo: nU)
           .limit(1)
           .get();
-      if (snapNome.docs.isEmpty) {
-        snapNome = await FirebaseFirestore.instance
+      if (sn.docs.isEmpty) {
+        sn = await FirebaseFirestore.instance
             .collection('AREA_RESTRITA')
-            .where('NOMEDOUSUARIO', isEqualTo: nomeUpper)
+            .where('NOMEDOUSUARIO', isEqualTo: nU)
             .limit(1)
             .get();
       }
 
-      DocumentReference? _areaRestritaRef;
-      if (snapNome.docs.isNotEmpty) {
-        _areaRestritaRef = snapNome.docs.first.reference;
+      DocumentReference? _ref;
+      if (sn.docs.isNotEmpty) {
+        _ref = sn.docs.first.reference;
       } else {
-        // Nome não encontrado — verifica se email existe em USUARIOS
-        final existeNoSistema = await _emailExisteNoSistema(email);
-        if (!existeNoSistema) {
+        final existe = await _emailExisteNoSistema(email);
+        if (!existe) {
           setState(() => _loginCarregando = false);
-          await _dialog(
-            'Acesso Negado',
-            'Este e-mail não está registrado no sistema HPS. '
-                'Solicite ao administrador o seu cadastro.',
-          );
+          await _dialog('Acesso Negado',
+              'E-mail não registrado. Solicite ao administrador.');
           return;
         }
-        // Email existe em USUARIOS mas sem AREA_RESTRITA — primeiro acesso
-        // Faz login PRIMEIRO para garantir que o uid está disponível no cadastro
-        try {
-          GoRouter.of(context).prepareAuthEvent();
-          final userCad =
-              await authManager.signInWithEmail(context, email, senha);
-          if (userCad == null) {
-            setState(() {
-              _loginCarregando = false;
-              _loginErro = 'Senha incorreta. Verifique e tente novamente.';
-            });
-            return;
-          }
-        } catch (signInErrCad) {
-          final errStr = signInErrCad.toString().toLowerCase();
-          final msg = errStr.contains('wrong-password') ||
-                  errStr.contains('invalid-credential') ||
-                  errStr.contains('user-not-found')
-              ? 'Email ou senha incorretos.'
-              : 'Erro ao autenticar. Verifique email e senha.';
-          setState(() {
-            _loginCarregando = false;
-            _loginErro = msg;
-          });
-          print('SignIn erro (primeiro acesso): $signInErrCad');
+        // Faz login ANTES de ir ao cadastro
+        GoRouter.of(context).prepareAuthEvent();
+        final uC = await authManager.signInWithEmail(context, email, senha);
+        if (uC == null) {
+          setState(() => _loginCarregando = false);
           return;
         }
-        // Login OK — vai para cadastro (já autenticado)
         setState(() {
           _cadEmail = email;
           _cadSenha = senha;
@@ -336,43 +303,19 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
         return;
       }
 
-      // Usuário já tem AREA_RESTRITA — faz login normalmente
-      final currentEmail =
-          FirebaseAuth.instance.currentUser?.email?.toLowerCase() ?? '';
-      final jaLogadoLogin =
-          currentEmail == email.toLowerCase() && currentEmail.isNotEmpty;
-
-      if (!jaLogadoLogin) {
-        try {
-          GoRouter.of(context).prepareAuthEvent();
-          final user = await authManager.signInWithEmail(context, email, senha);
-          if (user == null) {
-            setState(() {
-              _loginCarregando = false;
-              _loginErro = 'Senha incorreta. Verifique e tente novamente.';
-            });
-            return;
-          }
-        } catch (signInErr) {
-          final errStr = signInErr.toString().toLowerCase();
-          final msg = errStr.contains('wrong-password') ||
-                  errStr.contains('invalid-credential') ||
-                  errStr.contains('user-not-found')
-              ? 'Email ou senha incorretos.'
-              : 'Erro ao autenticar. Verifique email e senha.';
-          setState(() {
-            _loginCarregando = false;
-            _loginErro = msg;
-          });
-          print('SignIn erro login: $signInErr');
+      // Login normal (nome encontrado)
+      final eA = FirebaseAuth.instance.currentUser?.email?.toLowerCase() ?? '';
+      if (eA != email || eA.isEmpty) {
+        GoRouter.of(context).prepareAuthEvent();
+        final user = await authManager.signInWithEmail(context, email, senha);
+        if (user == null) {
+          setState(() => _loginCarregando = false);
           return;
         }
       }
-
-      // Atualiza apenas último acesso no doc existente
-      if (_areaRestritaRef != null) {
+      if (_ref != null) {
         try {
-          await _areaRestritaRef.update({
+          await _ref.update({
             'uid': FirebaseAuth.instance.currentUser?.uid ?? '',
             'ultimo_acesso': FieldValue.serverTimestamp(),
           });
@@ -409,19 +352,13 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
     final cargo = _cadCargoCtrl.text.trim();
 
     if (nome.isEmpty || cargo.isEmpty) {
-      setState(() => _cadErro = 'Preencha nome e cargo para continuar.');
+      setState(() => _cadErro = 'Preencha nome e cargo.');
       return;
     }
     if (nome.length < 3) {
       setState(() => _cadErro = 'Digite seu nome completo.');
       return;
     }
-    if (_cadSenha.isEmpty || _cadSenha.length < 6) {
-      setState(
-          () => _cadErro = 'Senha inválida. Volte ao login e tente novamente.');
-      return;
-    }
-
     setState(() {
       _cadCarregando = true;
       _cadErro = '';
@@ -429,54 +366,31 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
 
     try {
       final nomeFormatado = getMesMaiusculaA(nome) ?? nome.toUpperCase();
-      final senha = _cadSenha;
-
-      // O login já foi feito em _fazerLogin antes de vir para cá.
-      // Apenas pega o uid do usuário já autenticado.
       final uidAtual = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-      print(
-          '=== CADASTRO DEBUG === uid=$uidAtual email=$_cadEmail nome=$nomeFormatado');
       if (uidAtual.isEmpty) {
         setState(() {
           _cadCarregando = false;
-          _cadErro = 'Sessão expirada. Volte ao login e tente novamente.';
+          _cadErro = 'Sessão expirada. Volte ao login.';
         });
         return;
       }
-      // Salva no Firestore
-      try {
-        await FirebaseFirestore.instance.collection('AREA_RESTRITA').add({
-          'email': _cadEmail,
-          'nome': nomeFormatado,
-          'cargo': cargo,
-          'uid': uidAtual,
-          'cadastrado_em': FieldValue.serverTimestamp(),
-          'ultimo_acesso': FieldValue.serverTimestamp(),
-        });
-      } catch (firestoreErr) {
-        setState(() {
-          _cadCarregando = false;
-          _cadErro = 'Erro ao salvar dados: $firestoreErr';
-        });
-        print('Firestore erro: $firestoreErr');
-        return;
-      }
+      await FirebaseFirestore.instance.collection('AREA_RESTRITA').add({
+        'email': _cadEmail,
+        'nome': nomeFormatado,
+        'cargo': cargo,
+        'uid': uidAtual,
+        'cadastrado_em': FieldValue.serverTimestamp(),
+        'ultimo_acesso': FieldValue.serverTimestamp(),
+      });
 
       FFAppState().nomedouser = nomeFormatado;
       FFAppState().variavelUSUARIO = DadosUsuarioStruct(
         nome: nomeFormatado,
-        senha: senha,
+        senha: _cadSenha,
         email: _cadEmail,
       );
 
-      await _onesignal(
-        _cadEmail,
-        '0000000',
-        'Email',
-        _cadEmail,
-        uidAtual,
-      );
+      await _onesignal(_cadEmail, '0000000', 'Email', _cadEmail, uidAtual);
 
       if (mounted) context.goNamedAuth('HOME_new', context.mounted);
     } catch (e) {
@@ -484,7 +398,7 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
         _cadCarregando = false;
         _cadErro = 'Erro: $e';
       });
-      print('Cadastro erro geral: $e');
+      print('Cadastro erro: $e');
     }
   }
 
@@ -1242,7 +1156,7 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
                   const SizedBox(height: 14),
                   _campoCadastro(
                     label: 'Cargo / Função',
-                    hint: 'Ex: GERENTE ADMINISTRATIVO',
+                    hint: 'Ex: TÉCNICO DE REFRIGERAÇÃO',
                     controller: _cadCargoCtrl,
                     icon: Icons.work_outline_rounded,
                     theme: theme,
@@ -1252,7 +1166,6 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
                     ],
                   ),
                   const SizedBox(height: 14),
-                  // Senha mascarada vinda do login (sem campo editável)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -1270,21 +1183,19 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
                       Expanded(
                           child: Text(
                         _cadSenha.isEmpty
-                            ? 'Senha não informada — volte ao login'
-                            : '${'•' * _cadSenha.length}  (${_cadSenha.length} caracteres)',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: theme.secondaryText,
-                            letterSpacing: 1.0),
+                            ? 'Volte ao login e informe a senha'
+                            : '••••••  (${_cadSenha.length} car.)',
+                        style:
+                            TextStyle(fontSize: 13, color: theme.secondaryText),
                       )),
                     ]),
                   ),
                   if (_cadErro.isNotEmpty) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
+                          horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: theme.error.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(10),
