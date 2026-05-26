@@ -1156,7 +1156,7 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
                   const SizedBox(height: 14),
                   _campoCadastro(
                     label: 'Cargo / Função',
-                    hint: 'Ex: TÉCNICO DE REFRIGERAÇÃO',
+                    hint: 'Ex: Gerente administrativo/coordenador',
                     controller: _cadCargoCtrl,
                     icon: Icons.work_outline_rounded,
                     theme: theme,
