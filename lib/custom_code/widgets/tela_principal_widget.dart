@@ -251,7 +251,7 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
         ? card.animateOnPageLoad(animationsMap[animKey]!)
         : card;
     return Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(4, 8, 4, 8),
+        padding: const EdgeInsetsDirectional.fromSTEB(0, 8, 0, 8),
         child: animatedCard);
   }
 
@@ -509,6 +509,7 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
 
   Widget _buildDrawer(UsuariosRecord user) => Drawer(
         elevation: 1,
+        width: 240,
         child: Container(
           width: double.infinity,
           height: double.infinity,
@@ -625,7 +626,7 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
   }
 
   static const _mapsUrl =
-      'https://www.google.com/maps/dir/-14.8414528,-40.8698976/hps+refrigera%C3%A7%C3%A3o+localiza%C3%A7%C3%A7ao+para+compartilhar/@-14.8442919,-40.8719229,15z/data=!3m1!4b1!4m9!4m8!1m1!4e1!1m5!1m1!1s0x7463ba32267eba3:0xe66eb610d43c1a11!2m2!1d-40.8538501!2d-14.8470604?entry=ttu&g_ep=EgoyMDI0MDkxOC4xIKXMDSoASAFQAw%3D%3D';
+      'https://www.google.com/maps/dir/-14.8414528,-40.8698976/hps+refrigera%C3%A7%C3%A3o+localiza%C3%A7%C3%A7ao+para+compartilhar/@-14.8442919,-40.8719229,15z/data=!3m1!4b1!4m9!4m8!1m1!4e1!1m5!1m1!1s0x7463ba32267eba3:c1a11!2m2!1d-40.8538501!2d-14.8470604?entry=ttu&g_ep=EgoyMDI0MDkxOC4xIKXMDSoASAFQAw%3D%3D';
 
   // ─── TABBAR ────────────────────────────────────────────────────────────────────
 
@@ -672,8 +673,7 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
             constraints:
                 BoxConstraints(maxWidth: isDesktop ? 900 : double.infinity),
             child: Padding(
-              padding:
-                  EdgeInsetsDirectional.fromSTEB(isDesktop ? 80 : 0, 20, 0, 0),
+              padding: EdgeInsetsDirectional.fromSTEB(0, 20, 0, 0),
               child: Wrap(
                 spacing: 0,
                 runSpacing: 0,
@@ -1198,8 +1198,7 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
                     width: 220,
                     child: _buildSidebar(user),
                   ),
-                  if (Theme.of(context).brightness == Brightness.light)
-                    const VerticalDivider(thickness: 1, width: 1),
+                  const VerticalDivider(thickness: 1, width: 62),
                   Expanded(
                     child: Padding(
                       padding:

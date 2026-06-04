@@ -50,12 +50,15 @@ class _HOMENewWidgetState extends State<HOMENewWidget> {
           child: Column(
             mainAxisSize: MainAxisSize.max,
             children: [
-              Container(
-                width: MediaQuery.sizeOf(context).width * 0.995,
-                height: MediaQuery.sizeOf(context).height * 0.995,
-                child: custom_widgets.TelaPrincipalWidget(
-                  width: MediaQuery.sizeOf(context).width * 0.995,
-                  height: MediaQuery.sizeOf(context).height * 0.995,
+              Align(
+                alignment: AlignmentDirectional(0.0, 0.0),
+                child: Container(
+                  width: MediaQuery.sizeOf(context).width * 0.999,
+                  height: MediaQuery.sizeOf(context).height * 0.999,
+                  child: custom_widgets.TelaPrincipalWidget(
+                    width: MediaQuery.sizeOf(context).width * 0.999,
+                    height: MediaQuery.sizeOf(context).height * 0.999,
+                  ),
                 ),
               ),
             ],
