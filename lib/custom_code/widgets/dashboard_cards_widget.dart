@@ -5,16 +5,12 @@ import '/backend/supabase/supabase.dart';
 import '/actions/actions.dart' as action_blocks;
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import 'index.dart'; // Imports other custom widgets
+import '/custom_code/widgets/index.dart'; // Imports other custom widgets
 import '/custom_code/actions/index.dart'; // Imports custom actions
 import '/flutter_flow/custom_functions.dart'; // Imports custom functions
 import 'package:flutter/material.dart';
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
-
-import '/custom_code/widgets/index.dart';
-import '/custom_code/actions/index.dart';
-import '/flutter_flow/custom_functions.dart';
 
 import '/custom_code/widgets/index.dart';
 import '/custom_code/actions/index.dart';
@@ -714,6 +710,16 @@ class _DashboardCardsWidgetState extends State<DashboardCardsWidget> {
   String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
 
+  // ─── Altura por breakpoint (igual ao TelaPrincipalWidget) ───────────────────
+  // mobile  <600px  → 72px
+  // tablet  600-991 → 88px
+  // desktop ≥992px  → 100px
+  double _cardHeightForWidth(double sw) {
+    if (sw < 600) return 72.0;
+    if (sw < 992) return 88.0;
+    return 100.0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -766,55 +772,59 @@ class _DashboardCardsWidgetState extends State<DashboardCardsWidget> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double availW = constraints.maxWidth > 0
-            ? constraints.maxWidth
-            : MediaQuery.of(context).size.width;
+        final double sw = MediaQuery.of(context).size.width;
 
-        final double gap = availW > 600 ? 10.0 : 5.0;
+        // availW: usa constraints reais; fallback para sw se não disponível
+        final double availW =
+            constraints.maxWidth > 0 ? constraints.maxWidth : sw;
+
+        // gap entre cards: maior em desktop, menor em mobile
+        final double gap = sw >= 992
+            ? 10.0
+            : sw >= 600
+                ? 8.0
+                : 5.0;
+
         final double cardW = (availW - gap * (n - 1)) / n;
-        final double cardH = widget.height ?? (cardW * 1.1).clamp(68.0, 110.0);
 
-        final double screenWidth = MediaQuery.of(context).size.width;
-        final double espacoSuperior = screenWidth >= 1024 ? 24.0 : 0.0;
+        // Altura vinda do pai (já calculada por breakpoint) ou fallback local
+        final double cardH = (widget.height != null && widget.height! > 0)
+            ? widget.height!
+            : _cardHeightForWidth(sw);
 
         if (_loading) {
-          return Padding(
-            padding: EdgeInsets.only(top: espacoSuperior),
-            child: SizedBox(
-              width: availW,
-              height: cardH,
-              child: Center(
-                child: SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                      color: const Color(0xFF68DDC5), strokeWidth: 2),
-                ),
+          return SizedBox(
+            width: availW,
+            height: cardH,
+            child: Center(
+              child: SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                    color: const Color(0xFF68DDC5), strokeWidth: 2),
               ),
             ),
           );
         }
 
-        return Padding(
-          padding: EdgeInsets.only(top: espacoSuperior),
-          child: SizedBox(
-            width: availW,
-            height: cardH,
-            child: Row(
-              children: List.generate(
-                  n,
-                  (i) => Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _DashCard(
-                            data: cards[i],
-                            width: cardW,
-                            height: cardH,
-                            isDark: isDark,
-                          ),
-                          if (i < n - 1) SizedBox(width: gap),
-                        ],
-                      )),
+        return SizedBox(
+          width: availW,
+          height: cardH,
+          child: Row(
+            children: List.generate(
+              n,
+              (i) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _DashCard(
+                    data: cards[i],
+                    width: cardW,
+                    height: cardH,
+                    isDark: isDark,
+                  ),
+                  if (i < n - 1) SizedBox(width: gap),
+                ],
+              ),
             ),
           ),
         );
@@ -856,10 +866,37 @@ class _DashCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double iconBox = (width * 0.38).clamp(20.0, 40.0);
-    final double iconSize = (iconBox * 0.55).clamp(11.0, 22.0);
-    final double numSize = (width * 0.22).clamp(12.0, 22.0);
-    final double labelSize = (width * 0.12).clamp(7.0, 11.0);
+    // Tamanhos proporcionais ao card, com clamps por breakpoint
+    final double sw = MediaQuery.of(context).size.width;
+    final bool isMobile = sw < 600;
+    final bool isTablet = sw >= 600 && sw < 992;
+
+    // Ícone: menor em mobile para sobrar espaço para texto
+    final double iconBox = isMobile
+        ? (width * 0.34).clamp(18.0, 28.0)
+        : isTablet
+            ? (width * 0.36).clamp(22.0, 34.0)
+            : (width * 0.38).clamp(26.0, 40.0);
+
+    final double iconSize = (iconBox * 0.55).clamp(10.0, 22.0);
+
+    // Número: fonte maior em desktop
+    final double numSize = isMobile
+        ? (width * 0.20).clamp(11.0, 16.0)
+        : isTablet
+            ? (width * 0.21).clamp(13.0, 18.0)
+            : (width * 0.22).clamp(14.0, 22.0);
+
+    // Label: fonte menor em mobile
+    final double labelSize = isMobile
+        ? (width * 0.11).clamp(6.5, 9.0)
+        : isTablet
+            ? (width * 0.115).clamp(7.0, 10.0)
+            : (width * 0.12).clamp(7.5, 11.0);
+
+    // Espaçamento interno vertical proporcional à altura do card
+    final double gapTop = height * 0.04;
+    final double gapMid = height * 0.03;
 
     return GestureDetector(
       onTap: data.onTap,
@@ -897,7 +934,7 @@ class _DashCard extends StatelessWidget {
               ),
               child: Icon(data.icon, color: data.iconColor, size: iconSize),
             ),
-            SizedBox(height: height * 0.05),
+            SizedBox(height: gapTop),
             Text(
               '${data.count}',
               style: TextStyle(
@@ -908,7 +945,7 @@ class _DashCard extends StatelessWidget {
                 height: 1,
               ),
             ),
-            SizedBox(height: height * 0.03),
+            SizedBox(height: gapMid),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Text(

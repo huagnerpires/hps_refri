@@ -5,7 +5,7 @@ import '/backend/supabase/supabase.dart';
 import '/actions/actions.dart' as action_blocks;
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import 'index.dart'; // Imports other custom widgets
+import '/custom_code/widgets/index.dart'; // Imports other custom widgets
 import '/custom_code/actions/index.dart'; // Imports custom actions
 import '/flutter_flow/custom_functions.dart'; // Imports custom functions
 import 'package:flutter/material.dart';
@@ -546,7 +546,7 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
                   () => launchURL(_mapsUrl)),
               _navItem(Icons.privacy_tip_sharp, 'Politica de Privacidade',
                   () => _sheet(PoliticcasWidget())),
-              _navItem(Icons.logout, 'Sair', _logout),
+              _navItem(Icons.logout, 'Deslogar', _logout),
             ]),
           ),
         ),
@@ -797,15 +797,27 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
           ),
           Align(
               alignment: AlignmentDirectional.center,
-              child: SizedBox(
-                width: MediaQuery.sizeOf(context).width * 0.98,
-                height: MediaQuery.sizeOf(context).height * 0.12,
-                child: custom_widgets.DashboardCardsWidget(
-                  width: MediaQuery.sizeOf(context).width * 0.98,
-                  height: MediaQuery.sizeOf(context).height * 0.12,
-                  emailParam: currentUserEmail,
-                  senhaAppState: user.senha,
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final sw = MediaQuery.sizeOf(context).width;
+                  // mobile <600  → 72px   tablet 600-991 → 88px   desktop ≥992 → 100px
+                  final cardH = sw < 600
+                      ? 72.0
+                      : sw < 992
+                          ? 88.0
+                          : 100.0;
+                  final availW = sw * 0.98;
+                  return SizedBox(
+                    width: availW,
+                    height: cardH,
+                    child: custom_widgets.DashboardCardsWidget(
+                      width: availW,
+                      height: cardH,
+                      emailParam: currentUserEmail,
+                      senhaAppState: user.senha,
+                    ),
+                  );
+                },
               )),
           Padding(
             padding: const EdgeInsets.all(2),
