@@ -510,8 +510,9 @@ $linhasTabela
     if (t.contains('SPLIT')) return const Color(0xFF00897B);
     if (t.contains('CHILLER')) return const Color(0xFF00ACC1);
     if (t.contains('VRF') || t.contains('VRV')) return const Color(0xFFFF7043);
-    if (t.contains('CÂMARA') || t.contains('CAMARA'))
+    if (t.contains('CÂMARA') || t.contains('CAMARA')) {
       return const Color(0xFF43A047);
+    }
     if (t.contains('ILHA')) return const Color(0xFF1565C0);
     if (t.contains('CAIXA')) return const Color(0xFF795548);
     return const Color(0xFF607D8B);
@@ -519,12 +520,15 @@ $linhasTabela
 
   IconData _equipIcon(String equip) {
     final e = equip.toUpperCase();
-    if (e.contains('AR CONDICIONADO') || e.contains('SPLIT'))
+    if (e.contains('AR CONDICIONADO') || e.contains('SPLIT')) {
       return Icons.ac_unit_rounded;
-    if (e.contains('CÂMARA') || e.contains('CAMARA'))
+    }
+    if (e.contains('CÂMARA') || e.contains('CAMARA')) {
       return Icons.kitchen_rounded;
-    if (e.contains('ILHA') || e.contains('REFRIGERADA'))
+    }
+    if (e.contains('ILHA') || e.contains('REFRIGERADA')) {
       return Icons.shopping_cart_rounded;
+    }
     if (e.contains('CHILLER')) return Icons.device_thermostat_rounded;
     if (e.contains('CONDENSADORA')) return Icons.blur_on_rounded;
     if (e.contains('EVAPORADORA')) return Icons.air_rounded;
@@ -565,9 +569,14 @@ $linhasTabela
   // ══════════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: _bg(context),
-      child: SafeArea(
+    return Scaffold(
+      backgroundColor: _bg(context),
+      resizeToAvoidBottomInset: true, // Faz a tela encolher e o teclado subir
+      body: SafeArea(
+        top: true,
+        bottom: true,
+        left: true,
+        right: true,
         child: SizedBox(
           width: widget.width ?? double.infinity,
           height: widget.height ?? double.infinity,
@@ -1358,38 +1367,41 @@ $linhasTabela
                     textSub, Icons.bolt_outlined),
               ]),
               const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GestureDetector(
-                  onTap: () =>
-                      _goTo(_ViewState.request, _selectedData, null, null),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                            color: _primary.withAlpha(80),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4))
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.build_circle_outlined,
-                            color: Colors.white, size: 20),
-                        SizedBox(width: 10),
-                        Text('SOLICITAR ATENDIMENTO',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5)),
-                      ],
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: GestureDetector(
+                    onTap: () =>
+                        _goTo(_ViewState.request, _selectedData, null, null),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                            colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                              color: _primary.withAlpha(80),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4))
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.build_circle_outlined,
+                              color: Colors.white, size: 20),
+                          SizedBox(width: 10),
+                          Text('SOLICITAR ATENDIMENTO',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1519,7 +1531,9 @@ $linhasTabela
         _internalAppBar('Abrir Chamado'),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
+            // O padding extra resolve o problema caso o componente seja encapsulado fixo no FlutterFlow
+            padding: EdgeInsets.fromLTRB(
+                16, 20, 16, 40 + MediaQuery.of(context).viewInsets.bottom),
             children: [
               _solicitLabel(Icons.ac_unit_outlined, 'Equipamento', textSub),
               const SizedBox(height: 6),
@@ -1644,6 +1658,8 @@ $linhasTabela
                 child: TextField(
                   controller: _descricaoCtrl,
                   maxLines: 4,
+                  keyboardType: TextInputType
+                      .multiline, // Permite melhor uso do espaçamento
                   inputFormatters: [UpperCaseTextFormatter()],
                   textCapitalization: TextCapitalization.characters,
                   style: TextStyle(fontSize: 13, color: textMain),
@@ -1657,61 +1673,64 @@ $linhasTabela
                 ),
               ),
               const SizedBox(height: 28),
-              Row(children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _goBack,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: divColor, width: 1.5),
-                      ),
-                      child: Center(
-                          child: Text('Cancelar',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: textSub))),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: GestureDetector(
-                    onTap: () => _enviarSolicitacao(context, context, d),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                            colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                              color: _primary.withAlpha(80),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4))
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.send_rounded,
-                              color: Colors.white, size: 18),
-                          SizedBox(width: 8),
-                          Text('Solicitar',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800)),
-                        ],
+              SafeArea(
+                top: false,
+                child: Row(children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _goBack,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: divColor, width: 1.5),
+                        ),
+                        child: Center(
+                            child: Text('Cancelar',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: textSub))),
                       ),
                     ),
                   ),
-                ),
-              ]),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: GestureDetector(
+                      onTap: () => _enviarSolicitacao(context, context, d),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                              colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                                color: _primary.withAlpha(80),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4))
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.send_rounded,
+                                color: Colors.white, size: 18),
+                            SizedBox(width: 8),
+                            Text('Solicitar',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
             ],
           ),
         ),
@@ -1839,7 +1858,8 @@ $linhasTabela
         _internalAppBar('Novo Equipamento', closeIcon: true),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
+            padding: EdgeInsets.fromLTRB(
+                16, 20, 16, 40 + MediaQuery.of(context).viewInsets.bottom),
             children: [
               _sectionLabel(
                   'Identificação', Icons.label_outline_rounded, isDark),
@@ -1869,34 +1889,37 @@ $linhasTabela
               _campo('Tensão *', _tensaoCtrl, surfBg, textMain, textSub,
                   hint: 'Ex: 220 V'),
               const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () => _salvarEquipamento(context, context),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                          color: _primary.withAlpha(80),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4))
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.save_rounded, color: Colors.white, size: 20),
-                      SizedBox(width: 10),
-                      Text('SALVAR EQUIPAMENTO',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5)),
-                    ],
+              SafeArea(
+                top: false,
+                child: GestureDetector(
+                  onTap: () => _salvarEquipamento(context, context),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                            color: _primary.withAlpha(80),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4))
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.save_rounded, color: Colors.white, size: 20),
+                        SizedBox(width: 10),
+                        Text('SALVAR EQUIPAMENTO',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -2819,14 +2842,15 @@ class _SalvandoOverlayState extends State<_SalvandoOverlay>
     _ctrl.addListener(() {
       final v = _ctrl.value;
       String next;
-      if (v < 0.25)
+      if (v < 0.25) {
         next = 'Preparando...';
-      else if (v < 0.50)
+      } else if (v < 0.50) {
         next = 'Salvando dados...';
-      else if (v < 0.75)
+      } else if (v < 0.75) {
         next = 'Sincronizando...';
-      else
+      } else {
         next = 'Concluído!';
+      }
       if (next != _label && mounted) setState(() => _label = next);
     });
 
