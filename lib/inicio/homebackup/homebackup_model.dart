@@ -1,9 +1,7 @@
 import '/backend/api_requests/api_calls.dart';
 import '/backend/backend.dart';
-import '/backend/supabase/supabase.dart';
 import '/componentes/dark/dark_widget.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/instant_timer.dart';
 import '/index.dart';
 import 'homebackup_widget.dart' show HomebackupWidget;
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart'
@@ -40,9 +38,6 @@ class HomebackupModel extends FlutterFlowModel<HomebackupWidget> {
   ///  State fields for stateful widgets in this page.
 
   TutorialCoachMark? homeController;
-  InstantTimer? instantTimer;
-  // Stores action output result for [Backend Call - Query Rows] action in HOMEBACKUP widget.
-  List<NotificacaoRow>? quantidadeDeNotificacao;
   // Model for dark component.
   late DarkModel darkModel1;
   // Model for dark component.
@@ -109,7 +104,6 @@ class HomebackupModel extends FlutterFlowModel<HomebackupWidget> {
   @override
   void dispose() {
     homeController?.finish();
-    instantTimer?.cancel();
     darkModel1.dispose();
     darkModel2.dispose();
     tabBarController1?.dispose();

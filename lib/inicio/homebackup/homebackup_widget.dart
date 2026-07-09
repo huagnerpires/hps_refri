@@ -1,7 +1,6 @@
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/api_requests/api_calls.dart';
 import '/backend/backend.dart';
-import '/backend/supabase/supabase.dart';
 import '/componentes/dark/dark_widget.dart';
 import '/components/contato_widget.dart';
 import '/components/iniciar_conversa_widget.dart';
@@ -16,7 +15,6 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import '/flutter_flow/instant_timer.dart';
 import '/walkthroughs/home.dart';
 import 'dart:async';
 import '/custom_code/actions/index.dart' as actions;
@@ -29,7 +27,6 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart'
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -59,28 +56,6 @@ class _HomebackupWidgetState extends State<HomebackupWidget>
   void initState() {
     super.initState();
     _model = createModel(context, () => HomebackupModel());
-
-    // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      setDarkModeSetting(context, ThemeMode.light);
-      _model.instantTimer = InstantTimer.periodic(
-        duration: Duration(milliseconds: 1000),
-        callback: (timer) async {
-          _model.quantidadeDeNotificacao = await NotificacaoTable().queryRows(
-            queryFn: (q) => q.eqOrNull(
-              'email',
-              currentUserEmail,
-            ),
-          );
-          _model.quantidadeNotificacao = valueOrDefault<int>(
-            _model.quantidadeDeNotificacao?.length,
-            0,
-          );
-          safeSetState(() {});
-        },
-        startImmediately: true,
-      );
-    });
 
     _model.tabBarController1 = TabController(
       vsync: this,

@@ -28,7 +28,6 @@ import '/components/ver_manutencao_widget.dart';
 import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import '/flutter_flow/instant_timer.dart';
 import '/walkthroughs/home.dart';
 import 'dart:async';
 import '/custom_code/actions/index.dart' as actions;
@@ -62,7 +61,8 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
   int? _quantidadeNotificacao = 0;
   int _mensagensNaoLidas = 0;
   TutorialCoachMark? _homeController;
-  InstantTimer? _instantTimer;
+  Timer? _instantTimer;
+  bool _atualizandoBadges = false; // guarda contra chamadas sobrepostas
   List<NotificacaoRow>? _quantidadeDeNotificacao;
   DarkModel? _darkModel1;
   int? _conversa;
@@ -291,9 +291,11 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       setDarkModeSetting(context, ThemeMode.light);
 
-      _instantTimer = InstantTimer.periodic(
-        duration: const Duration(milliseconds: 2000),
-        callback: (timer) async {
+      Future<void> atualizarBadges() async {
+        // Evita empilhar consultas se a leitura anterior ainda não terminou
+        if (_atualizandoBadges) return;
+        _atualizandoBadges = true;
+        try {
           _quantidadeDeNotificacao = await NotificacaoTable().queryRows(
             queryFn: (q) => q.eqOrNull('email', currentUserEmail),
           );
@@ -308,9 +310,17 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
           );
           _mensagensNaoLidas = chats.length;
 
-          safeSetState(() {});
-        },
-        startImmediately: true,
+          if (mounted) safeSetState(() {});
+        } finally {
+          _atualizandoBadges = false;
+        }
+      }
+
+      // Dispara imediatamente (equivalente ao antigo startImmediately: true)
+      unawaited(atualizarBadges());
+      _instantTimer = Timer.periodic(
+        const Duration(milliseconds: 2000),
+        (timer) => atualizarBadges(),
       );
 
       await Future.delayed(const Duration(milliseconds: 800));

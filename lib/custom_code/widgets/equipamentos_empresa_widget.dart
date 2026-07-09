@@ -569,9 +569,12 @@ $linhasTabela
   // ══════════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
+    // Pegando a altura exata do teclado para garantir visibilidade no formulário.
+    // Alteramos resizeToAvoidBottomInset para false no Scaffold root, para aplicar
+    // o padding manualmente dentro dos campos com ScrollPadding.
     return Scaffold(
       backgroundColor: _bg(context),
-      resizeToAvoidBottomInset: true, // Faz a tela encolher e o teclado subir
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         top: true,
         bottom: true,
@@ -753,6 +756,7 @@ $linhasTabela
                   controller: _searchCtrl,
                   inputFormatters: [UpperCaseTextFormatter()],
                   textCapitalization: TextCapitalization.characters,
+                  scrollPadding: const EdgeInsets.only(bottom: 120),
                   onChanged: (v) => setState(() => _search = v.toLowerCase()),
                   style: TextStyle(
                       fontSize: 13,
@@ -1530,208 +1534,213 @@ $linhasTabela
       children: [
         _internalAppBar('Abrir Chamado'),
         Expanded(
-          child: ListView(
-            // O padding extra resolve o problema caso o componente seja encapsulado fixo no FlutterFlow
+          // Utilizado SingleChildScrollView com Padding explicito do ViewInsets
+          child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
                 16, 20, 16, 40 + MediaQuery.of(context).viewInsets.bottom),
-            children: [
-              _solicitLabel(Icons.ac_unit_outlined, 'Equipamento', textSub),
-              const SizedBox(height: 6),
-              _solicitReadOnly(equip, surfBg, textMain, tColor),
-              const SizedBox(height: 16),
-              _solicitLabel(Icons.tag_rounded, 'Patrimônio', textSub),
-              const SizedBox(height: 6),
-              _solicitReadOnly(patrimonio, surfBg, textMain, _primary),
-              const SizedBox(height: 16),
-              Row(children: [
-                _solicitLabel(
-                    Icons.receipt_long_outlined, 'Número da O.S.', textSub),
-                const Spacer(),
-                GestureDetector(
-                  onTap: _gerandoOs ? null : _gerarOS,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      gradient: _gerandoOs
-                          ? null
-                          : const LinearGradient(
-                              colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
-                      color: _gerandoOs ? _primary.withAlpha(60) : null,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_gerandoOs)
-                          const SizedBox(
-                              width: 11,
-                              height: 11,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2))
-                        else
-                          const Icon(Icons.casino_outlined,
-                              color: Colors.white, size: 13),
-                        const SizedBox(width: 5),
-                        Text(_gerandoOs ? 'Gerando...' : 'Gerar O.S.',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800)),
-                      ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _solicitLabel(Icons.ac_unit_outlined, 'Equipamento', textSub),
+                const SizedBox(height: 6),
+                _solicitReadOnly(equip, surfBg, textMain, tColor),
+                const SizedBox(height: 16),
+                _solicitLabel(Icons.tag_rounded, 'Patrimônio', textSub),
+                const SizedBox(height: 6),
+                _solicitReadOnly(patrimonio, surfBg, textMain, _primary),
+                const SizedBox(height: 16),
+                Row(children: [
+                  _solicitLabel(
+                      Icons.receipt_long_outlined, 'Número da O.S.', textSub),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: _gerandoOs ? null : _gerarOS,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        gradient: _gerandoOs
+                            ? null
+                            : const LinearGradient(
+                                colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
+                        color: _gerandoOs ? _primary.withAlpha(60) : null,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_gerandoOs)
+                            const SizedBox(
+                                width: 11,
+                                height: 11,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2))
+                          else
+                            const Icon(Icons.casino_outlined,
+                                color: Colors.white, size: 13),
+                          const SizedBox(width: 5),
+                          Text(_gerandoOs ? 'Gerando...' : 'Gerar O.S.',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800)),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ]),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: surfBg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _primary.withAlpha(40)),
-                ),
-                child: TextField(
-                  controller: _osCtrl,
-                  keyboardType: TextInputType.number,
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: textMain,
-                      fontWeight: FontWeight.w700),
-                  decoration: InputDecoration(
-                    hintText: 'Digite o número da ordem de serviço',
-                    hintStyle: TextStyle(
-                        fontSize: 13,
-                        color: textSub,
-                        fontWeight: FontWeight.w400),
-                    prefixIcon: const Icon(Icons.tag_outlined,
-                        color: _primary, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 14),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _solicitLabel(Icons.build_outlined, 'Tipo de Defeito', textSub),
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: () => _mostrarDialogDefeito(context),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                ]),
+                const SizedBox(height: 6),
+                Container(
                   decoration: BoxDecoration(
                     color: surfBg,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: _primary.withAlpha(40)),
                   ),
+                  child: TextField(
+                    controller: _osCtrl,
+                    keyboardType: TextInputType.number,
+                    scrollPadding: const EdgeInsets.only(bottom: 120), // ADD
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: textMain,
+                        fontWeight: FontWeight.w700),
+                    decoration: InputDecoration(
+                      hintText: 'Digite o número da ordem de serviço',
+                      hintStyle: TextStyle(
+                          fontSize: 13,
+                          color: textSub,
+                          fontWeight: FontWeight.w400),
+                      prefixIcon: const Icon(Icons.tag_outlined,
+                          color: _primary, size: 20),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 14),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _solicitLabel(Icons.build_outlined, 'Tipo de Defeito', textSub),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () => _mostrarDialogDefeito(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: surfBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _primary.withAlpha(40)),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.build_outlined,
+                          color: _primary, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                          child: Text(
+                              _defeitoCtrl.text.isEmpty
+                                  ? 'Escolha um defeito'
+                                  : _defeitoCtrl.text,
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: _defeitoCtrl.text.isEmpty
+                                      ? textSub
+                                      : textMain,
+                                  fontWeight: _defeitoCtrl.text.isEmpty
+                                      ? FontWeight.w400
+                                      : FontWeight.w600))),
+                      Icon(Icons.keyboard_arrow_down_rounded,
+                          color: textSub, size: 22),
+                    ]),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _solicitLabel(Icons.info_outline_rounded,
+                    'Informações Adicionais', textSub),
+                const SizedBox(height: 6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: surfBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: divColor),
+                  ),
+                  child: TextField(
+                    controller: _descricaoCtrl,
+                    maxLines: 4,
+                    keyboardType: TextInputType.multiline,
+                    inputFormatters: [UpperCaseTextFormatter()],
+                    textCapitalization: TextCapitalization.characters,
+                    scrollPadding: const EdgeInsets.only(bottom: 120), // ADD
+                    style: TextStyle(fontSize: 13, color: textMain),
+                    decoration: InputDecoration(
+                      hintText:
+                          'Descreva detalhes do problema ou observações importantes',
+                      hintStyle: TextStyle(fontSize: 13, color: textSub),
+                      contentPadding: const EdgeInsets.all(14),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                SafeArea(
+                  top: false,
                   child: Row(children: [
-                    const Icon(Icons.build_outlined, color: _primary, size: 20),
-                    const SizedBox(width: 10),
                     Expanded(
-                        child: Text(
-                            _defeitoCtrl.text.isEmpty
-                                ? 'Escolha um defeito'
-                                : _defeitoCtrl.text,
-                            style: TextStyle(
-                                fontSize: 14,
-                                color: _defeitoCtrl.text.isEmpty
-                                    ? textSub
-                                    : textMain,
-                                fontWeight: _defeitoCtrl.text.isEmpty
-                                    ? FontWeight.w400
-                                    : FontWeight.w600))),
-                    Icon(Icons.keyboard_arrow_down_rounded,
-                        color: textSub, size: 22),
+                      child: GestureDetector(
+                        onTap: _goBack,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: divColor, width: 1.5),
+                          ),
+                          child: Center(
+                              child: Text('Cancelar',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: textSub))),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: GestureDetector(
+                        onTap: () => _enviarSolicitacao(context, context, d),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                                colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: _primary.withAlpha(80),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4))
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.send_rounded,
+                                  color: Colors.white, size: 18),
+                              SizedBox(width: 8),
+                              Text('Solicitar',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ]),
                 ),
-              ),
-              const SizedBox(height: 16),
-              _solicitLabel(Icons.info_outline_rounded,
-                  'Informações Adicionais', textSub),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: surfBg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: divColor),
-                ),
-                child: TextField(
-                  controller: _descricaoCtrl,
-                  maxLines: 4,
-                  keyboardType: TextInputType
-                      .multiline, // Permite melhor uso do espaçamento
-                  inputFormatters: [UpperCaseTextFormatter()],
-                  textCapitalization: TextCapitalization.characters,
-                  style: TextStyle(fontSize: 13, color: textMain),
-                  decoration: InputDecoration(
-                    hintText:
-                        'Descreva detalhes do problema ou observações importantes',
-                    hintStyle: TextStyle(fontSize: 13, color: textSub),
-                    contentPadding: const EdgeInsets.all(14),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              SafeArea(
-                top: false,
-                child: Row(children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: _goBack,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: divColor, width: 1.5),
-                        ),
-                        child: Center(
-                            child: Text('Cancelar',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: textSub))),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: GestureDetector(
-                      onTap: () => _enviarSolicitacao(context, context, d),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                              colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                                color: _primary.withAlpha(80),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4))
-                          ],
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.send_rounded,
-                                color: Colors.white, size: 18),
-                            SizedBox(width: 8),
-                            Text('Solicitar',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ]),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -1857,73 +1866,82 @@ $linhasTabela
       children: [
         _internalAppBar('Novo Equipamento', closeIcon: true),
         Expanded(
-          child: ListView(
+          // Utilizado SingleChildScrollView com Padding explicito
+          child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
                 16, 20, 16, 40 + MediaQuery.of(context).viewInsets.bottom),
-            children: [
-              _sectionLabel(
-                  'Identificação', Icons.label_outline_rounded, isDark),
-              _campo('Equipamento *', _nomeCtrl, surfBg, textMain, textSub,
-                  hint: 'Ex: AR CONDICIONADO'),
-              _campo('Patrimônio *', _patrimonioCtrl, surfBg, textMain, textSub,
-                  tipo: TextInputType.number, hint: 'Ex: 168938'),
-              _sectionLabel('Localização', Icons.location_on_outlined, isDark),
-              _campo('Sala *', _salaCtrl, surfBg, textMain, textSub,
-                  hint: 'Ex: ADM DA MANUTENÇÃO'),
-              _campo('Setor *', _setorCtrl, surfBg, textMain, textSub,
-                  hint: 'Ex: MANUTENÇÃO'),
-              _campo(
-                  'Responsável *', _responsavelCtrl, surfBg, textMain, textSub,
-                  hint: 'Nome do responsável'),
-              _sectionLabel('Dados Técnicos', Icons.settings_outlined, isDark),
-              _campo('Tipo *', _tipoCtrl, surfBg, textMain, textSub,
-                  hint: 'Ex: INVERTER / CONVENCIONAL'),
-              _campo('Marca *', _marcaCtrl, surfBg, textMain, textSub,
-                  hint: 'Ex: LG'),
-              _campo('Modelo *', _modeloCtrl, surfBg, textMain, textSub,
-                  hint: 'Ex: SPLIT'),
-              _campo('BTUs/CAPACIDADE *', _btusCtrl, surfBg, textMain, textSub,
-                  hint: 'Ex: 24K BTUS/LITROS'),
-              _campo('Fluido *', _fluidoCtrl, surfBg, textMain, textSub,
-                  hint: 'Ex: R410A'),
-              _campo('Tensão *', _tensaoCtrl, surfBg, textMain, textSub,
-                  hint: 'Ex: 220 V'),
-              const SizedBox(height: 10),
-              SafeArea(
-                top: false,
-                child: GestureDetector(
-                  onTap: () => _salvarEquipamento(context, context),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                            color: _primary.withAlpha(80),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4))
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.save_rounded, color: Colors.white, size: 20),
-                        SizedBox(width: 10),
-                        Text('SALVAR EQUIPAMENTO',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5)),
-                      ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _sectionLabel(
+                    'Identificação', Icons.label_outline_rounded, isDark),
+                _campo('Equipamento *', _nomeCtrl, surfBg, textMain, textSub,
+                    hint: 'Ex: AR CONDICIONADO'),
+                _campo(
+                    'Patrimônio *', _patrimonioCtrl, surfBg, textMain, textSub,
+                    tipo: TextInputType.number, hint: 'Ex: 168938'),
+                _sectionLabel(
+                    'Localização', Icons.location_on_outlined, isDark),
+                _campo('Sala *', _salaCtrl, surfBg, textMain, textSub,
+                    hint: 'Ex: ADM DA MANUTENÇÃO'),
+                _campo('Setor *', _setorCtrl, surfBg, textMain, textSub,
+                    hint: 'Ex: MANUTENÇÃO'),
+                _campo('Responsável *', _responsavelCtrl, surfBg, textMain,
+                    textSub,
+                    hint: 'Nome do responsável'),
+                _sectionLabel(
+                    'Dados Técnicos', Icons.settings_outlined, isDark),
+                _campo('Tipo *', _tipoCtrl, surfBg, textMain, textSub,
+                    hint: 'Ex: INVERTER / CONVENCIONAL'),
+                _campo('Marca *', _marcaCtrl, surfBg, textMain, textSub,
+                    hint: 'Ex: LG'),
+                _campo('Modelo *', _modeloCtrl, surfBg, textMain, textSub,
+                    hint: 'Ex: SPLIT'),
+                _campo(
+                    'BTUs/CAPACIDADE *', _btusCtrl, surfBg, textMain, textSub,
+                    hint: 'Ex: 24K BTUS/LITROS'),
+                _campo('Fluido *', _fluidoCtrl, surfBg, textMain, textSub,
+                    hint: 'Ex: R410A'),
+                _campo('Tensão *', _tensaoCtrl, surfBg, textMain, textSub,
+                    hint: 'Ex: 220 V'),
+                const SizedBox(height: 10),
+                SafeArea(
+                  top: false,
+                  child: GestureDetector(
+                    onTap: () => _salvarEquipamento(context, context),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                            colors: [Color(0xFF26A69A), Color(0xFF00695C)]),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                              color: _primary.withAlpha(80),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4))
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.save_rounded,
+                              color: Colors.white, size: 20),
+                          SizedBox(width: 10),
+                          Text('SALVAR EQUIPAMENTO',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -2009,6 +2027,7 @@ $linhasTabela
             keyboardType: tipo,
             textCapitalization: TextCapitalization.characters,
             inputFormatters: [UpperCaseTextFormatter()],
+            scrollPadding: const EdgeInsets.only(bottom: 120), // ADD
             style: TextStyle(fontSize: 13, color: textMain),
             decoration: InputDecoration(
               hintText: hint.isNotEmpty ? hint : label,
@@ -2394,8 +2413,8 @@ $linhasTabela
         'SERVICOREALIZADO': '',
         'DESCRICAO': infoAdd,
         'STATUS': 'AGUARDANDO AVALIAÇÃO',
-        'TECNICO': 'NÃO DEFINIDO',
-        'PECA': '',
+        'TECNICORESPONSAVEL': 'NÃO DEFINIDO', // Ajustado padrão Firebase
+        'PECAS': '', // Ajustado padrão Firebase
         'PONTOS': 0,
         'TERMINO': '',
       });
