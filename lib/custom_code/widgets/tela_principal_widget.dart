@@ -45,6 +45,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/services.dart';
 
 class TelaPrincipalWidget extends StatefulWidget {
   const TelaPrincipalWidget({super.key, this.width, this.height});
@@ -137,32 +140,92 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
     context.goNamedAuth(LoginWidget.routeName, context.mounted);
   }
 
+  // ─── Pop-up Manual de Fallback para Web ─────────────────────────────────────
+  Future<void> _mostrarPopupManual() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogCtx) {
+        final ctrl = TextEditingController();
+        return AlertDialog(
+          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.qr_code_scanner_rounded,
+                  color: FlutterFlowTheme.of(context).primary),
+              const SizedBox(width: 8),
+              Text('HPS Code', style: FlutterFlowTheme.of(context).titleMedium),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                  'Câmera indisponível neste navegador. Digite o código do patrimônio abaixo:',
+                  style: FlutterFlowTheme.of(context).bodyMedium),
+              const SizedBox(height: 16),
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                inputFormatters: [UpperCaseTextFormatter()],
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  hintText: 'EX: 168938',
+                  filled: true,
+                  fillColor: FlutterFlowTheme.of(context).primaryBackground,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, null),
+              child: Text('Cancelar',
+                  style: TextStyle(
+                      color: FlutterFlowTheme.of(context).secondaryText)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FlutterFlowTheme.of(context).primary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => Navigator.pop(dialogCtx, ctrl.text.trim()),
+              child: const Text('Buscar',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null && result.isNotEmpty) {
+      _qrcode = result;
+      await _sheet(ListaDeEquipamentosWidget(patrimonio: _qrcode));
+      safeSetState(() {});
+    }
+  }
+
   // ─── Verificação de permissão financeiro ────────────────────────────────────
-  // Busca por campo 'email' em AREA_RESTRITA — estrutura simplificada do
-  // LoginCompletoWidget novo (salva: email, nome, cargo, cadastrado_em,
-  // ultimo_acesso).
-  //
-  // A aba Financeiro exige o campo 'permissao_financeiro == true' no doc.
-  // Verifica se doc de AREA_RESTRITA pertence ao usuário logado
-  // e tem permissao_financeiro == true.
-  // Usa UID (gravado no login). Para docs sem uid ainda,
-  // libera qualquer doc com permissao_financeiro=true — o uid
-  // será gravado no próximo login automaticamente.
   bool _docTemPermissao(Map<String, dynamic> data) {
     if (data['permissao_financeiro'] != true) return false;
     final uid = currentUserUid;
     final docUid = (data['uid'] ?? '').toString().trim();
-    // Doc tem uid: verifica match exato
     if (docUid.isNotEmpty) return uid == docUid;
-    // Doc sem uid (primeiro login após simplificação):
-    // libera se o usuário tiver permissao_financeiro=true
-    // (seguro pois há poucos usuários na coleção)
     return uid.isNotEmpty;
   }
 
   // ─── Disparado ao clicar na aba Financeiro ────────────────────────────────────
   Future<void> _carregarFinanceiro() async {
-    safeSetState(() {}); // força rebuild — o StreamBuilder cuida do resto
+    safeSetState(() {});
   }
 
   Widget _menuCard({
@@ -292,7 +355,6 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
       setDarkModeSetting(context, ThemeMode.light);
 
       Future<void> atualizarBadges() async {
-        // Evita empilhar consultas se a leitura anterior ainda não terminou
         if (_atualizandoBadges) return;
         _atualizandoBadges = true;
         try {
@@ -316,7 +378,6 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
         }
       }
 
-      // Dispara imediatamente (equivalente ao antigo startImmediately: true)
       unawaited(atualizarBadges());
       _instantTimer = Timer.periodic(
         const Duration(milliseconds: 2000),
@@ -699,13 +760,29 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
                         ? 'containerOnPageLoadAnimation5'
                         : 'containerOnPageLoadAnimation5',
                     onTap: () async {
-                      _qrcode = await FlutterBarcodeScanner.scanBarcode(
-                          '#C62828', 'Cancelar', true, ScanMode.BARCODE);
-                      if (_qrcode != '-1') {
-                        await _sheet(
-                            ListaDeEquipamentosWidget(patrimonio: _qrcode!));
+                      // Verifica se é Web PC, ou se é celular (Nativo ou Web Mobile)
+                      final isDesktopWeb = kIsWeb &&
+                          (defaultTargetPlatform != TargetPlatform.iOS &&
+                              defaultTargetPlatform != TargetPlatform.android);
+
+                      if (isDesktopWeb) {
+                        // Desktop Web: exibe pop-up imediatamente
+                        await _mostrarPopupManual();
+                      } else {
+                        // Tentativa de abrir câmera no celular
+                        try {
+                          _qrcode = await FlutterBarcodeScanner.scanBarcode(
+                              '#C62828', 'Cancelar', true, ScanMode.BARCODE);
+                          if (_qrcode != '-1' && _qrcode.isNotEmpty) {
+                            await _sheet(
+                                ListaDeEquipamentosWidget(patrimonio: _qrcode));
+                            safeSetState(() {});
+                          }
+                        } catch (e) {
+                          // Se der erro de plugin ausente (Web Mobile), abre o pop-up
+                          await _mostrarPopupManual();
+                        }
                       }
-                      safeSetState(() {});
                     },
                   ),
                   if (user.empresa == true)
@@ -811,7 +888,6 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final sw = MediaQuery.sizeOf(context).width;
-                  // mobile <600  → 72px   tablet 600-991 → 88px   desktop ≥992 → 100px
                   final cardH = sw < 600
                       ? 72.0
                       : sw < 992
@@ -978,8 +1054,6 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
   // ─── TAB FINANCEIRO desktop ──────────────────────────────────────────────────
 
   Widget _buildFinanceiroDesktop() {
-    // TelaCustomWidget já gerencia permissão (UID → email → DEVICE_ID)
-    // e exibe bloqueio ou conteúdo internamente
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(40, 0, 0, 0),
       child: SizedBox(
@@ -996,8 +1070,6 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
   // ─── TAB FINANCEIRO mobile ───────────────────────────────────────────────────
 
   Widget _buildFinanceiroMobile(UsuariosRecord user) {
-    // TelaCustomWidget já gerencia permissão (UID → email → DEVICE_ID)
-    // e exibe bloqueio ou conteúdo internamente
     return custom_widgets.TelaCustomWidget(
       width: MediaQuery.sizeOf(context).width,
       height: MediaQuery.sizeOf(context).height,
@@ -1084,7 +1156,6 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
                           'solicitou acesso ao financeiro do app.',
                     );
                     if (_apiResultjgi875?.succeeded == true) {
-                      // Registra solicitação no Firestore para rastreamento
                       await FirebaseFirestore.instance
                           .collection('SOLICITACOES_FINANCEIRO')
                           .add({
@@ -1401,4 +1472,14 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
         },
         onSkip: () => true,
       );
+}
+
+// FORMATADOR MAIÚSCULAS PARA O POP-UP
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    return TextEditingValue(
+        text: newValue.text.toUpperCase(), selection: newValue.selection);
+  }
 }
