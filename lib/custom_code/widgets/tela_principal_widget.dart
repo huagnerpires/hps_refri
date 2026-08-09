@@ -690,23 +690,24 @@ class _TelaPrincipalWidgetState extends State<TelaPrincipalWidget>
                 alignment: WrapAlignment.start,
                 crossAxisAlignment: WrapCrossAlignment.start,
                 children: [
-                  if (!isDesktop)
-                    _menuCard(
-                      icon: Icons.qr_code_scanner_rounded,
-                      iconColor: const Color(0xFF4CAF50),
-                      title: 'Hps code',
-                      subtitle: 'Escaneie seu equipamento',
-                      animKey: 'containerOnPageLoadAnimation5',
-                      onTap: () async {
-                        _qrcode = await FlutterBarcodeScanner.scanBarcode(
-                            '#C62828', 'Cancelar', true, ScanMode.BARCODE);
-                        if (_qrcode != '-1') {
-                          await _sheet(
-                              ListaDeEquipamentosWidget(patrimonio: _qrcode!));
-                        }
-                        safeSetState(() {});
-                      },
-                    ),
+                  _menuCard(
+                    icon: Icons.qr_code_scanner_rounded,
+                    iconColor: const Color(0xFF4CAF50),
+                    title: 'Hps code',
+                    subtitle: 'Escaneie seu equipamento',
+                    animKey: isDesktop
+                        ? 'containerOnPageLoadAnimation5'
+                        : 'containerOnPageLoadAnimation5',
+                    onTap: () async {
+                      _qrcode = await FlutterBarcodeScanner.scanBarcode(
+                          '#C62828', 'Cancelar', true, ScanMode.BARCODE);
+                      if (_qrcode != '-1') {
+                        await _sheet(
+                            ListaDeEquipamentosWidget(patrimonio: _qrcode!));
+                      }
+                      safeSetState(() {});
+                    },
+                  ),
                   if (user.empresa == true)
                     _menuCard(
                       icon: Icons.search_rounded,

@@ -1877,9 +1877,34 @@ $linhasTabela
                     'Identificação', Icons.label_outline_rounded, isDark),
                 _campo('Equipamento *', _nomeCtrl, surfBg, textMain, textSub,
                     hint: 'Ex: AR CONDICIONADO'),
+
+                // MUDANÇA: Adicionado o suffix para o campo Patrimônio
                 _campo(
                     'Patrimônio *', _patrimonioCtrl, surfBg, textMain, textSub,
-                    tipo: TextInputType.number, hint: 'Ex: 168938'),
+                    tipo: TextInputType.text, // Mudei para aceitar o texto
+                    hint: 'Ex: 168938',
+                    suffix: Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () {
+                          // A string já entra como exigido pelo input format
+                          _patrimonioCtrl.text = 'NÃO POSSUI PATRIMÔNIO';
+                        },
+                        icon: const Icon(Icons.money_off_csred_rounded,
+                            size: 14, color: _primary),
+                        label: const Text('NÃO POSSUI',
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: _primary)),
+                      ),
+                    )),
+
                 _sectionLabel(
                     'Localização', Icons.location_on_outlined, isDark),
                 _campo('Sala *', _salaCtrl, surfBg, textMain, textSub,
@@ -1888,7 +1913,7 @@ $linhasTabela
                     hint: 'Ex: MANUTENÇÃO'),
                 _campo('Responsável *', _responsavelCtrl, surfBg, textMain,
                     textSub,
-                    hint: 'Nome do responsável'),
+                    hint: 'NOME DO RESPONSÁVEL'),
                 _sectionLabel(
                     'Dados Técnicos', Icons.settings_outlined, isDark),
                 _campo('Tipo *', _tipoCtrl, surfBg, textMain, textSub,
@@ -1900,7 +1925,7 @@ $linhasTabela
                 _campo(
                     'BTUs/CAPACIDADE *', _btusCtrl, surfBg, textMain, textSub,
                     hint: 'Ex: 24K BTUS/LITROS'),
-                _campo('Fluido *', _fluidoCtrl, surfBg, textMain, textSub,
+                _campo('Fluido (GÁS) *', _fluidoCtrl, surfBg, textMain, textSub,
                     hint: 'Ex: R410A'),
                 _campo('Tensão *', _tensaoCtrl, surfBg, textMain, textSub,
                     hint: 'Ex: 220 V'),
@@ -2003,9 +2028,12 @@ $linhasTabela
     );
   }
 
+  // MUDANÇA: Adicionado Widget? suffix
   Widget _campo(String label, TextEditingController ctrl, Color surfBg,
       Color textMain, Color textSub,
-      {TextInputType tipo = TextInputType.text, String hint = ''}) {
+      {TextInputType tipo = TextInputType.text,
+      String hint = '',
+      Widget? suffix}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2036,6 +2064,7 @@ $linhasTabela
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               border: InputBorder.none,
+              suffixIcon: suffix, // MUDANÇA: Adicionado aqui
             ),
           ),
         ),
