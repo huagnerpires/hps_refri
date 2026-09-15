@@ -158,8 +158,9 @@ class _ManutencaoGridWidgetState extends State<ManutencaoGridWidget>
       final limite = DateTime.now().subtract(const Duration(days: 15));
       final snap = await FirebaseFirestore.instance
           .collection('MANUTENCAO')
-          .where('STATUS', isEqualTo: 'CONCLUÍDA')
-          .get();
+          // ADICIONADO: Agora busca CONCLUÍDA, CANCELADA e REPROVADO
+          .where('STATUS',
+              whereIn: ['CONCLUÍDA', 'CANCELADA', 'REPROVADO']).get();
 
       final batch = FirebaseFirestore.instance.batch();
       int count = 0;
@@ -238,7 +239,7 @@ class _ManutencaoGridWidgetState extends State<ManutencaoGridWidget>
     if (u.contains('AGUARDANDO PE')) return _orange;
     if (u.contains('AGUARDANDO APROVA')) return _orange;
     if (u.contains('APROVADO')) return _green;
-    if (u.contains('REPROVA')) return _red;
+    if (u.contains('REPROVA') || u.contains('CANCELADA')) return _red;
     if (u.contains('CONCLU')) return _primary;
     if (u.contains('EM ANDAMENTO')) return _purple;
     return _grey;
@@ -250,7 +251,8 @@ class _ManutencaoGridWidgetState extends State<ManutencaoGridWidget>
     if (u.contains('AGUARDANDO PE')) return Icons.hourglass_top_rounded;
     if (u.contains('AGUARDANDO APROVA')) return Icons.pending_outlined;
     if (u.contains('APROVADO')) return Icons.check_circle_outline;
-    if (u.contains('REPROVA')) return Icons.cancel_outlined;
+    if (u.contains('REPROVA') || u.contains('CANCELADA'))
+      return Icons.cancel_outlined;
     if (u.contains('CONCLU')) return Icons.task_alt_outlined;
     if (u.contains('EM ANDAMENTO')) return Icons.autorenew_rounded;
     return Icons.help_outline;

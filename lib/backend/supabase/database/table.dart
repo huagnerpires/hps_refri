@@ -16,6 +16,21 @@ abstract class SupabaseTable<T extends SupabaseDataRow> {
     return query.select().then((rows) => rows.map(createRow).toList());
   }
 
+  /// Fetches one page of rows, starting at row [offset] and returning at most
+  /// [pageSize] rows. A page shorter than [pageSize] means the query is
+  /// exhausted.
+  Future<List<T>> queryRowsPage({
+    required PostgrestTransformBuilder Function(PostgrestFilterBuilder) queryFn,
+    required int offset,
+    required int pageSize,
+  }) {
+    final select = _select();
+    return queryFn(select)
+        .range(offset, offset + pageSize - 1)
+        .select()
+        .then((rows) => rows.map(createRow).toList());
+  }
+
   Future<List<T>> querySingleRow({
     required PostgrestTransformBuilder Function(PostgrestFilterBuilder) queryFn,
   }) =>
@@ -33,6 +48,15 @@ abstract class SupabaseTable<T extends SupabaseDataRow> {
       .limit(1)
       .single()
       .then(createRow);
+
+  Future<T> upsert(Map<String, dynamic> data, {String? onConflict}) =>
+      SupaFlow.client
+          .from(tableName)
+          .upsert(data, onConflict: onConflict)
+          .select()
+          .limit(1)
+          .single()
+          .then(createRow);
 
   Future<List<T>> update({
     required Map<String, dynamic> data,
@@ -60,6 +84,19 @@ abstract class SupabaseTable<T extends SupabaseDataRow> {
     }
     return delete.select().then((rows) => rows.map(createRow).toList());
   }
+}
+
+/// Serializes a full-text search value for use inside a raw PostgREST
+/// `or=(...)` filter string. The value is double-quoted with quotes and
+/// backslashes escaped, so reserved PostgREST characters (commas, dots,
+/// parentheses) in user input cannot terminate or extend the filter
+/// expression. Null or blank input becomes an empty search, which matches
+/// no rows - the OR-identity, mirroring how textSearchOrNull skips the
+/// filter in AND chains.
+String ftsOrFilterValue(String? query) {
+  final escaped =
+      (query?.trim() ?? '').replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+  return '"$escaped"';
 }
 
 extension NullSafePostgrestFilters on PostgrestFilterBuilder {
@@ -97,6 +134,31 @@ extension NullSafePostgrestFilters on PostgrestFilterBuilder {
 
   PostgrestFilterBuilder inFilterOrNull(String column, List<dynamic>? values) {
     return values != null ? inFilter(column, values) : this;
+  }
+
+  PostgrestFilterBuilder textSearchOrNull(
+    String column,
+    String? query, {
+    String? config,
+    TextSearchType? type,
+  }) {
+    return query != null && query.trim().isNotEmpty
+        ? textSearch(column, query, config: config, type: type)
+        : this;
+  }
+
+  /// Full-text search for update/delete matching-rows filters. Unlike
+  /// [textSearchOrNull], a null or blank [query] must not remove the
+  /// predicate - that would turn "mutate matching rows" into "mutate every
+  /// visible row". A blank query is sent as an empty search instead, which
+  /// matches no rows, so the mutation affects nothing.
+  PostgrestFilterBuilder requiredTextSearch(
+    String column,
+    String? query, {
+    String? config,
+    TextSearchType? type,
+  }) {
+    return textSearch(column, query?.trim() ?? '', config: config, type: type);
   }
 }
 

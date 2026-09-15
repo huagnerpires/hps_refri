@@ -144,6 +144,10 @@ class _LoginCompletoWidgetState extends State<LoginCompletoWidget>
   @override
   void initState() {
     super.initState();
+
+    // CHAMADA ADICIONADA PARA CARREGAR A IMAGEM AO INICIAR A TELA
+    _carregarLogoFirebase();
+
     _fadeCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 280));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
